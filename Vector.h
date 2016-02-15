@@ -54,7 +54,7 @@ struct Vec3 {
 		x /= v; y /= v; z /= v;
 	}
 	
-	Vec3 operator-() {
+	Vec3 operator-() const{
 		return Vec3(-x, -y, -z);
 	}
 	

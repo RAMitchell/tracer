@@ -1,26 +1,31 @@
 #include "Scene.h"
+#include "Material.h"
 
 
-void Scene::Add(Vec3 p, float r, Material*m){
+void Scene::Add(Vec3 p, float r, Material *m) {
     objects.emplace_back(p, r, m);
 }
 
 
 void Scene::FindLights() {
     for (Object &obj : objects) {
-        if (obj.material->emmissive > 0.0) {
+        if (obj.material->getEmmissive() > 0.0) {
             lights.push_back(&obj);
         }
     }
 }
 
+Hit Scene::bvhIntersect(const Ray &r) const {
 
-Hit Scene::Intersect(Ray ray) const {
+    return  bvh.intersect(r);
+
+}
+Hit Scene::Intersect(const Ray &r) const {
     Hit hit;
 
     for (const Object &obj : objects) {
-        Hit h = obj.Intersect(ray);
-        if (h.d < hit.d) {
+        Hit h = obj.Intersect(r);
+        if (h.distance < hit.distance) {
             hit = h;
         }
     }
@@ -31,15 +36,15 @@ Hit Scene::Intersect(Ray ray) const {
 
 bool Scene::IsVisible(Vec3 o, Vec3 d, Object *test) const {
 
-    Ray ray = {o, d};
-    float distance = (o-test->Position).Length()-test->Radius;
+    Ray ray = {o, d, SHADOW, -1};
+    float distance = (o - test->Position).Length() - test->Radius;
     for (const Object &obj : objects) {
-        if(&obj == test){
+        if (&obj == test) {
             continue;
         }
 
         Hit h = obj.Intersect(ray);
-        if (h.d <  distance ) {
+        if (h.distance < distance) {
             return false;
         }
     }

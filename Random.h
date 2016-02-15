@@ -1,8 +1,8 @@
 #pragma once
 #include "Vector.h"
 #include <cmath>
+#include "Includes.h"
 
-#define M_PI 3.14159265359
 
 static unsigned long xorshf96(void) {
 	static unsigned long x=123456789, y=362436069, z=521288629;
