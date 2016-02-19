@@ -25,7 +25,7 @@ class EnvMap {
     envProjection proj;
 
 public:
-    EnvMap(Vec3 colour) : colour(colour) {
+    EnvMap() {
         use_texture = false;
     }
 

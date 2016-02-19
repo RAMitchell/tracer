@@ -18,15 +18,15 @@ class Scene;
 class Material {
 
 protected:
-    Vec3 colour;
-    float emmissive;
+    Vec3 colour = Vec3();
+    float emmissive = 0.0;
 
     //Generates random cosine weighted unit vector around normal
     Vec3 cosine_sample(const Vec3 &n, float exp = 1);
 
     Vec3 direct(const Hit &h, const Scene *scene);
 
-    float fresnel(const Hit &h,const float &f0);
+    float fresnel(const Hit &h, const float &f0);
 
 public:
     virtual Vec3 shade(const Hit &h, const Tracer *tracer) = 0;
@@ -92,6 +92,30 @@ public:
     Vec3 f(const Vec3 &wo, const Vec3 &wi, const Vec3 &n);
 
     Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf);
+};
+
+class Refract : public Material {
+private:
+    float ior;
+public:
+    Refract(float ior) : ior(ior) {
+    }
+
+    Vec3 shade(const Hit &h, const Tracer *tracer);
+
+    Vec3 f(const Vec3 &wo, const Vec3 &wi, const Vec3 &n);
+
+    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf);
+};
+
+class Mirror : public Material {
+public:
+    Vec3 shade(const Hit &h, const Tracer *tracer);
+
+    Vec3 f(const Vec3 &wo, const Vec3 &wi, const Vec3 &n);
+
+    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf);
+
 };
 
 #endif //TRACER_MATERIAL_H

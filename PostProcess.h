@@ -9,33 +9,13 @@
 
 namespace PostProcess {
 
-    void bloom(const std::vector<Vec3> &backBuffer, std::vector<Vec3> &displayBuffer, int height, int width);
+    void bloom(const std::vector<Vec3> &backBuffer, std::vector<Vec3> &displayBuffer, std::vector<Vec3> &bloomBuffer,
+               int k_r, int height, int width,float amount);
 
     void linearTM(const std::vector<Vec3> &backBuffer, std::vector<Vec3> &displayBuffer);
 
-    void ReinhardTM(const std::vector<Vec3> &backBuffer, std::vector<Vec3> &displayBuffer);
+    void ReinhardTM(const std::vector<Vec3> &in, std::vector<Vec3> &out);
+
+    void  gaussianBlur(std::vector<Vec3> &in, std::vector<Vec3> &out, int k_r, int height,
+                                    int width);
 }
-/*
-class Tonemapper {
-
-public:
-    virtual void process(std::vector<Vec3> &backBuffer, std::vector<Vec3> &displayBuffer) =0;
-
-protected:
-
-};
-
-class LinearTM : public Tonemapper {
-
-public:
-
-    void process(std::vector<Vec3> &backBuffer, std::vector<Vec3> &displayBuffer);
-};
-
-class ReinhardTM : public Tonemapper {
-
-public:
-
-    void process(std::vector<Vec3> &backBuffer, std::vector<Vec3> &displayBuffer);
-};
-*/

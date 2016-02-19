@@ -33,6 +33,7 @@ class Tracer {
     std::vector<Tile> tiles;
     std::vector<Vec3> displayBuffer;
     std::vector<Vec3> backBuffer;
+    std::vector<Vec3> bloomBuffer;
 
     Camera camera;
     Scene scene;
@@ -46,6 +47,7 @@ public:
 
         displayBuffer.resize(width * height);
         backBuffer.resize(width * height);
+        bloomBuffer.resize(width * height);
 
         s = int(sqrt(samples));
 
@@ -66,8 +68,8 @@ public:
         camera.SetFOV(fov);
     }
 
-    void setEnvMap(std::string texture_filename, envProjection proj){
-        scene.setEnvMap(texture_filename,proj);
+    void setEnvMap(std::string texture_filename, envProjection proj) {
+        scene.setEnvMap(texture_filename, proj);
     }
 
     Camera &getCamera() {

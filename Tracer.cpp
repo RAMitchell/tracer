@@ -30,8 +30,8 @@ void Tracer::renderTile(Tile &t) {
 
 void Tracer::postProcess() {
 
-     displayBuffer = backBuffer;
-    PostProcess::bloom(backBuffer, displayBuffer, height, width);
+    PostProcess::bloom(backBuffer, displayBuffer, bloomBuffer, 15, height, width, 0.1);
+    PostProcess::ReinhardTM(bloomBuffer, displayBuffer);
 }
 
 void Tracer::Render() {
@@ -39,7 +39,7 @@ void Tracer::Render() {
     //Frame is finished, display frame and prepare new frame
     if (tiles.size() == 0) {
         if (frame > 0) {
-             postProcess();
+            postProcess();
         }
         frame++;
         buildTiles();
@@ -70,19 +70,22 @@ Vec3 Tracer::Trace(Ray ray) const {
     if (hit.IsValid()) {
 
         //Russian roulette
-        float rr = 1.0;
         if (ray.depth >= bounces) {
-
-            if (Random(0, 1) < RR_PROB) {
-                rr /= RR_PROB;
+            //Use max reflectance as termination probability
+            Vec3 c = hit.obj->material->getColour();
+            float rr = std::max(c.x, std::max(c.y, c.z));
+            if (Random(0, 1) < rr) {
+                return hit.obj->material->shade(hit, this) / rr;
             }
             else {
                 return Vec3();
             }
         }
+        else {
 
+            return hit.obj->material->shade(hit, this);
+        }
 
-        return hit.obj->material->shade(hit, this);
 
     }
     else {

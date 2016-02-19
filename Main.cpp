@@ -9,11 +9,14 @@ Tracer tracer;
 //Materials
 std::unique_ptr<Lambert> white(new Lambert(Vec3(0.75), 0.0));
 std::unique_ptr<FresnelBlend> gloss(new FresnelBlend(Vec3(0.75, 0.25, 0.25), 0.0, 1000.0, 0.05));
-std::unique_ptr<Lambert> e(new Lambert(Vec3(1), 60.0));
+std::unique_ptr<Lambert> e(new Lambert(Vec3(1), 120.0));
 std::unique_ptr<Lambert> e_debug(new Lambert(Vec3(0.5), 0.25));
 std::unique_ptr<Lambert> red(new Lambert(Vec3(0.75, 0.25, 0.25), 0.0));
 std::unique_ptr<Lambert> blue(new Lambert(Vec3(0.25, 0.25, 0.75), 0.0));
-std::unique_ptr<Lambert> black(new Lambert(Vec3(0.75), 0.0));
+std::unique_ptr<Lambert> black(new Lambert(Vec3(0.0), 0.0));
+std::unique_ptr<Refract> refr(new Refract(1.5));
+
+Mirror mirror;
 
 void debug1() {
 
@@ -39,12 +42,10 @@ void debug2() {
 
 void hdrScene() {
 
-    tracer.SetCamera(Vec3(-1, -1.5, -18.0), Vec3(0, 5, 0), Vec3(0, 1, 0), M_PI / 13);
-
-
-    //tracer.Add(Vec3(0, -1e4, 0), 1e4, white->get()); //Bottom
-    tracer.Add(Vec3(2.0, 1.0, 0), 1.0,  gloss.get());//Ball 1
-    tracer.Add(Vec3(-2, 1.0, -4.5), 1.0, gloss.get());//Ball 2
+    tracer.SetCamera(Vec3(-1, 2.5, 18.0), Vec3(0, 1, 0), Vec3(0, 1, 0), M_PI / 13);
+    //tracer.Add(Vec3(0, -1e4, 0), 1e4, white.get()); //Bottom
+    tracer.Add(Vec3(2.0, 1.0, 0), 1.0, refr.get());//Ball 1
+    tracer.Add(Vec3(-2, 1.0, -4.5), 1.0, refr.get());//Ball 2
 
     tracer.setEnvMap("Texture/road.hdr", ENV_LATLNG);
 
@@ -53,9 +54,7 @@ void hdrScene() {
 
 void initScene() {
 
-    tracer.SetCamera(Vec3(0.0, 2.5, -18.0), Vec3(0, 2, 0), Vec3(0, 1, 0), M_PI / 5);
-
-
+    tracer.SetCamera(Vec3(0.0, 2.5, -18.0), Vec3(0, 2, 0), Vec3(0, 1, 0), M_PI / 13);
     tracer.Add(Vec3(1e4 + 3, 0, 0), 1e4, red.get()); //Left
     tracer.Add(Vec3(-1e4 - 3, 0, 0), 1e4, blue.get()); //Right
     tracer.Add(Vec3(0, 0, 1e4 + 3), 1e4, white.get()); //Back
@@ -63,10 +62,9 @@ void initScene() {
     //tracer.Add(Vec3(0, 1e4 + 5, 0), 1e4, white.get()); //Top
 
     tracer.Add(Vec3(0, -1e4, 0), 1e4, white.get()); //Bottom
-    tracer.Add(Vec3(2.0, 1.0, 0), 1.0, gloss.get());//Ball 1
-    tracer.Add(Vec3(-2, 1.0, -4.5), 1.0, gloss.get());//Ball 2
+    tracer.Add(Vec3(2.0, 1.0, 0), 1.0,   white.get());//Ball 1
+    tracer.Add(Vec3(-2, 1.0, -4.5), 1.0, refr.get());//Ball 2
     tracer.Add(Vec3(-1, 4.5, -2), 0.5, e.get());//Light
-
 
     tracer.Init();
 }
@@ -111,7 +109,7 @@ void display() {
 
 
 int main(int argc, char **argv) {
-    int w = 1000, h = 1000, s = 9, b = 2, ts = 32;
+    int w = 1000, h = 1000, s = 9, b = 5, ts = 32;
 
     bool bench = false;
     int bench_iterations = 100;
@@ -142,8 +140,8 @@ int main(int argc, char **argv) {
         return 0;
     }
     else {
-        //initScene();
-        hdrScene();
+        initScene();
+        //hdrScene();
     }
 
     glutInit(&argc, argv);

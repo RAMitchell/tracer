@@ -20,8 +20,20 @@ struct Hit {
 
     int depth;
 
-    bool IsValid() {
+    bool IsValid() const{
         return distance < NO_HIT - EPS;
+    }
+    bool addEmissive() const{
+        switch (rType) {
+            case CAMERA:
+                return true;
+            case REFLECT:
+                return true;
+            case REFRACT:
+                return true;
+            default:
+                return false;
+        }
     }
 
     Hit() : distance(NO_HIT) { }

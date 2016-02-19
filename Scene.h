@@ -13,18 +13,18 @@ class Scene {
     std::vector<Object> objects;
 
     std::vector<Object *> lights;
-    std::unique_ptr<EnvMap> envMap;
+    EnvMap envMap;
 
 public:
 
     void Add(Vec3 p, float r, Material *m);
 
     void setEnvMap(std::string texture_filename,envProjection proj) {
-        envMap = std::unique_ptr<EnvMap>(new EnvMap(texture_filename,proj));
+        envMap = EnvMap(texture_filename,proj);
     }
 
     Vec3 env(Vec3 d) const {
-        return envMap->sample(d);
+        return envMap.sample(d);
     }
 
     void buildBvh() {

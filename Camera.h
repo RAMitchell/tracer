@@ -5,7 +5,9 @@
 enum RType {
     CAMERA,
     GLOSSY,
+    REFLECT,
     DIFFUSE,
+    REFRACT,
     SHADOW
 };
 
@@ -15,6 +17,7 @@ struct Ray {
     int depth;
 
     Ray(Vec3 o, Vec3 d, RType r_type, int depth) : o(o), d(Normalize(d)), type(r_type), depth(depth) { }
+
 
     Vec3 operator*(float t) {
         return o + d * t;
