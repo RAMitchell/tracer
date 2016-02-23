@@ -11,6 +11,7 @@
 #include <random>
 #include <ctime>
 #include <cstdint>
+#include <iostream>
 
 #define EPS        (1e-3f)
 #define M_PI 3.14159265359
@@ -28,6 +29,21 @@ T lerp(T a, T b, float i) {
 }
 
 
-static float fresnel(float t, float f0) {
-    return f0 + (1 - f0) * t * t * t * t * t;
-}
+struct Timer {
+    size_t start;
+    std::string description;
+
+    Timer() { }
+
+    Timer(std::string d) : start(clock()) {
+        description = d;
+    }
+
+    void print() {
+        std::cout << description << " time: " << ((double) clock() - start) / CLOCKS_PER_SEC << "\n";
+    }
+
+    void reset() {
+        start = clock();
+    }
+};

@@ -10,15 +10,19 @@
 
 class Scene {
     BVH bvh;
-    std::vector<Object> objects;
+    std::vector< Sphere> spheres;
+    std::vector<const Object *> objects;
 
-    std::vector<Object *> lights;
+    std::vector<const Object *> lights;
     EnvMap envMap;
 
 public:
 
-    void Add(Vec3 p, float r, Material *m);
+    void addSphere(Sphere s);
 
+    void setEnvMap(Vec3 c){
+        envMap = EnvMap(c);
+    }
     void setEnvMap(std::string texture_filename,envProjection proj) {
         envMap = EnvMap(texture_filename,proj);
     }
@@ -31,13 +35,13 @@ public:
         bvh.build(objects);
     };
 
-    void FindLights();
+    void init();
 
-    Hit Intersect(const Ray &ray) const;
+    Hit intersect(const Ray &ray) const;
 
     Hit bvhIntersect(const Ray &ray) const;
 
-    bool IsVisible(Vec3 start, Vec3 end, Object *obj) const;
+    bool isVisible(Vec3 start, Vec3 end, const Object *obj) const;
 
-    const std::vector<Object *> &Lights() const { return lights; }
+    const std::vector<const Object *> &getLights() const { return lights; }
 };

@@ -28,6 +28,9 @@ public:
     EnvMap() {
         use_texture = false;
     }
+    EnvMap(Vec3 c) {
+        colour = c;
+    }
 
     EnvMap(std::string texture_filename, envProjection proj) : proj(proj) {
         use_texture = true;

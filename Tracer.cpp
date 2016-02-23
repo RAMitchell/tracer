@@ -2,9 +2,6 @@
 #include "Tracer.h"
 #include "Material.h"
 
-#define RR_PROB 0.8
-
-class Filter;
 
 void Tracer::buildTiles() {
     for (int y = 0; y < height; y += tileSize) {
@@ -19,7 +16,7 @@ void Tracer::renderTile(Tile &t) {
 
     for (int y = t.ymin; y < t.ymax; ++y) {
         for (int x = t.xmin; x < t.xmax; ++x) {
-            Vec3 pixel = filter->samplePixel(x, y, width, height, s, this);
+            Vec3 pixel = Filter::tent(x, y, width, height, s, this);
             int index = y * width + x;
             backBuffer[index] =
                     backBuffer[index] * ((frame - 1.0) / frame) + (pixel / frame);
@@ -39,9 +36,13 @@ void Tracer::Render() {
     //Frame is finished, display frame and prepare new frame
     if (tiles.size() == 0) {
         if (frame > 0) {
+            frameTimer.print();
+            Timer ppTime("Post process");
             postProcess();
+            ppTime.print();
         }
         frame++;
+        frameTimer.reset();
         buildTiles();
     }
 
@@ -66,16 +67,18 @@ void Tracer::Render() {
 Vec3 Tracer::Trace(Ray ray) const {
 
 
-    Hit hit = scene.Intersect(ray);
+    Hit hit = scene.bvhIntersect(ray);
     if (hit.IsValid()) {
 
         //Russian roulette
         if (ray.depth >= bounces) {
             //Use max reflectance as termination probability
-            Vec3 c = hit.obj->material->getColour();
+            Vec3 c = hit.obj->albedo(hit.u, hit.v);
             float rr = std::max(c.x, std::max(c.y, c.z));
+            //Don't have a reflectance of 1.0, otherwise we may never finish
+            rr = std::min(rr,0.95f);
             if (Random(0, 1) < rr) {
-                return hit.obj->material->shade(hit, this) / rr;
+                return hit.obj->material()->shade(hit, this) / rr;
             }
             else {
                 return Vec3();
@@ -83,7 +86,7 @@ Vec3 Tracer::Trace(Ray ray) const {
         }
         else {
 
-            return hit.obj->material->shade(hit, this);
+            return hit.obj->material()->shade(hit, this);
         }
 
 

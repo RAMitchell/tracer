@@ -2,29 +2,23 @@
 #include "Material.h"
 
 
-void Scene::Add(Vec3 p, float r, Material *m) {
-    objects.emplace_back(p, r, m);
+void Scene::addSphere(Sphere s) {
+    spheres.push_back(s);
 }
 
 
-void Scene::FindLights() {
-    for (Object &obj : objects) {
-        if (obj.material->getEmmissive() > 0.0) {
-            lights.push_back(&obj);
-        }
-    }
-}
 
 Hit Scene::bvhIntersect(const Ray &r) const {
 
-    return  bvh.intersect(r);
+    return bvh.intersect(r);
 
 }
-Hit Scene::Intersect(const Ray &r) const {
+
+Hit Scene::intersect(const Ray &r) const {
     Hit hit;
 
-    for (const Object &obj : objects) {
-        Hit h = obj.Intersect(r);
+    for (const Object* obj : objects) {
+        Hit h = obj->intersect(r);
         if (h.distance < hit.distance) {
             hit = h;
         }
@@ -33,20 +27,28 @@ Hit Scene::Intersect(const Ray &r) const {
     return hit;
 }
 
+void Scene::init() {
 
-bool Scene::IsVisible(Vec3 o, Vec3 d, Object *test) const {
+    for( Sphere &s: spheres) {
+        objects.push_back(&s);
+
+        if (s.material()->isEmissive()) {
+            lights.push_back(&s);
+        }
+    }
+
+    buildBvh();
+}
+
+
+bool Scene::isVisible(Vec3 o, Vec3 d, const Object *test) const {
 
     Ray ray = {o, d, SHADOW, -1};
-    float distance = (o - test->Position).Length() - test->Radius;
-    for (const Object &obj : objects) {
-        if (&obj == test) {
-            continue;
-        }
 
-        Hit h = obj.Intersect(ray);
-        if (h.distance < distance) {
-            return false;
-        }
+    Hit h = bvh.intersect(ray);
+
+    if (h.obj != test) {
+        return false;
     }
     return true;
 }

@@ -5,52 +5,62 @@
 #include "Camera.h"
 #include "Random.h"
 #include "Hit.h"
+#include "BVH.h"
 
 
 class Material;
 
 class Hit;
 
-struct Object {
+class Scene;
 
-    Vec3 Position;
-    float Radius;
+class Object {
 
-    Material *material;
+protected:
+    const Vec3 p;
 
-    Object(Vec3 p, float r, Material *m) : Position(p), Radius(r), material(m) { }
+    const Material *mat;
 
-    Hit Intersect(const Ray &ray) const {
-        Vec3 op = Position - ray.o;
-        float b = op.Dot(ray.d);
-        if (b < 0.0f) {
-            return Hit();
-        }
-        float det = b * b - op.Dot(op) + Radius * Radius;
+public:
+    Object(Vec3 p, Material *m) : p(p), mat(m) { }
 
-        if (det >= 0) {
-            det = sqrtf(det);
-            Vec3 h;
-            if (b - det > 0) {
-                h = ray.o + ray.d * (b - det);
-                return {h, h - Position, b - det, -ray.d, ray.type, this, ray.depth};
-            }
-            if (b + det > 0) {
-                h = ray.o + ray.d * (b + det);
-                return {h, h - Position, b + det, -ray.d, ray.type, this, ray.depth};
-            }
-        }
+    virtual Hit intersect(const Ray &ray) const = 0;
 
-        return Hit();
+    virtual Vec3 albedo(float u, float v) const = 0;
+
+    virtual BBox getBB() const = 0;
+
+    virtual Vec3 directLighting(const Hit& h, const Scene *scene)const = 0;
+
+    Vec3 position() const {
+        return p;
     }
 
-    Vec3 GetPointInside() const {
-        return RandomSphere(Radius) + Position;
+    const Material *material() const {
+        return mat;
     }
 
-    //Find the maximum distance of the surface from its position. Used for generating bounding boxes
-    float getMaxRadius()const{
-        return Radius;
-    }
+private:
+    virtual void getUV(const Vec3 &h, float &u, float &v) const = 0;
+};
+
+class Sphere : public Object {
+private:
+    float radius;
+
+public:
+    Sphere(Vec3 p, float r, Material *m) : Object(p, m), radius(r) { }
+
+    Hit intersect(const Ray &ray) const;
+
+    Vec3 albedo(float u, float v) const;
+
+    BBox getBB() const;
+
+    Vec3 directLighting(const Hit& h, const Scene *scene)const;
+
+private:
+
+    void getUV(const Vec3 &h, float &u, float &v) const;
 
 };

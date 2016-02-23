@@ -13,6 +13,7 @@ struct Object;
 
 struct Hit {
     Vec3 position, normal, wo;
+    float u, v;
     RType rType;
 
     float distance;
@@ -20,10 +21,15 @@ struct Hit {
 
     int depth;
 
-    bool IsValid() const{
+    Hit(const Vec3 &position, const Vec3 &normal, const Vec3 &wo, float u, float v, const RType &rType, float distance,
+        const Object *obj, int depth) : position(position), normal(Normalize(normal)), wo(wo), u(u), v(v), rType(rType),
+                                        distance(distance), obj(obj), depth(depth) { }
+
+    bool IsValid() const {
         return distance < NO_HIT - EPS;
     }
-    bool addEmissive() const{
+
+    bool addEmissive() const {
         switch (rType) {
             case CAMERA:
                 return true;
@@ -38,8 +44,6 @@ struct Hit {
 
     Hit() : distance(NO_HIT) { }
 
-    Hit(Vec3 p, Vec3 n, float d, Vec3 wo_, RType rt, const Object *obj,int depth) :
-            position(p), normal(Normalize(n)), distance(d), wo(wo_), rType(rt), obj(obj), depth(depth) { }
 };
 
 #endif //TRACER_HIT_H

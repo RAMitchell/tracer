@@ -7,6 +7,7 @@
 
 #include "Vector.h"
 #include "Random.h"
+#include "Texture.h"
 
 
 class Hit;
@@ -17,33 +18,47 @@ class Scene;
 
 class Material {
 
+private:
+    Vec3 colour;
+    Vec3 emmissive;
+    Texture *alb;
+
+
 protected:
-    Vec3 colour = Vec3();
-    float emmissive = 0.0;
+    Material() { }
 
-    //Generates random cosine weighted unit vector around normal
-    Vec3 cosine_sample(const Vec3 &n, float exp = 1);
+    Material(const Vec3 &colour, const Vec3 &emmissive, Texture *alb) : colour(colour), emmissive(emmissive),
+                                                                        alb(alb) { }
 
-    Vec3 direct(const Hit &h, const Scene *scene);
+//Generates random cosine weighted unit vector around normal
+    Vec3 cosine_sample(const Vec3 &n, float exp = 1) const;
 
-    float fresnel(const Hit &h, const float &f0);
+    Vec3 direct(const Hit &h, const Scene *scene) const;
+
+    float fresnel(const Hit &h, const float &f0) const;
 
 public:
-    virtual Vec3 shade(const Hit &h, const Tracer *tracer) = 0;
+    virtual Vec3 shade(const Hit &h, const Tracer *tracer) const = 0;
 
-    Vec3 getColour() {
+    Vec3 albedo(float u, float v) const {
 
+        if (alb != NULL) {
+            return alb->sample(u, v);
+        }
         return colour;
     }
 
-    float getEmmissive() {
+    Vec3 getEmmissive() const {
         return emmissive;
     }
 
-private:
-    virtual Vec3 f(const Vec3 &wo, const Vec3 &wi, const Vec3 &n) = 0;
+    bool isEmissive() const {
+        return (emmissive.x > 0 || emmissive.y > 0 || emmissive.z > 0);
+    }
 
-    virtual Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf) = 0;
+    virtual Vec3 f(const Hit &h, const Vec3 &wi) const = 0;
+
+    virtual Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf) const = 0;
 
 
 };
@@ -52,29 +67,33 @@ class Phong : public Material {
 
     float exp;
 public:
-    Phong(float exp) : exp(exp) {
+    Phong(float exp) : exp(exp), Material(Vec3(0.99), 0, NULL) {
     }
 
-    Vec3 shade(const Hit &h, const Tracer *tracer);
+    Vec3 shade(const Hit &h, const Tracer *tracer) const;
 
-    Vec3 f(const Vec3 &wo, const Vec3 &wi, const Vec3 &n);
+    Vec3 f(const Hit &h, const Vec3 &wi) const;
 
-    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf);
+    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf) const;
 };
 
 class Lambert : public Material {
 public:
 
-    Lambert(Vec3 c, float e) {
-        emmissive = e;
-        colour = c;
+    Lambert(Vec3 c) : Material(c, 0, NULL) {
     }
 
-    Vec3 shade(const Hit &h, const Tracer *tracer);
+    Lambert(Texture *tex) : Material(0, 0, tex) {
+    }
 
-    Vec3 f(const Vec3 &wo, const Vec3 &wi, const Vec3 &n);
+    Lambert(Vec3 c, Vec3 e) : Material(c, e, NULL) {
+    }
 
-    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf);
+    Vec3 shade(const Hit &h, const Tracer *tracer) const;
+
+    Vec3 f(const Hit &h, const Vec3 &wi) const;
+
+    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf) const;
 };
 
 class FresnelBlend : public Material {
@@ -83,38 +102,40 @@ private:
     Phong specular;
     float f0;
 public:
-    FresnelBlend(Vec3 c, float e, float exp, float f0) : diffuse(c, e), specular(exp), f0(f0) {
+    FresnelBlend(Vec3 c, float e, float exp, float f0) : diffuse(c, e), specular(exp), f0(f0), Material(c, 0, NULL) {
 
     }
 
-    Vec3 shade(const Hit &h, const Tracer *tracer);
+    Vec3 shade(const Hit &h, const Tracer *tracer) const;
 
-    Vec3 f(const Vec3 &wo, const Vec3 &wi, const Vec3 &n);
+    Vec3 f(const Hit &h, const Vec3 &wi) const;
 
-    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf);
+    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf) const;
 };
 
 class Refract : public Material {
 private:
     float ior;
 public:
-    Refract(float ior) : ior(ior) {
+    Refract(float ior) : ior(ior), Material(Vec3(0.99), 0, NULL) {
     }
 
-    Vec3 shade(const Hit &h, const Tracer *tracer);
+    Vec3 shade(const Hit &h, const Tracer *tracer) const;
 
-    Vec3 f(const Vec3 &wo, const Vec3 &wi, const Vec3 &n);
+    Vec3 f(const Hit &h, const Vec3 &wi) const;
 
-    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf);
+    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf) const;
 };
 
 class Mirror : public Material {
 public:
-    Vec3 shade(const Hit &h, const Tracer *tracer);
+    Mirror() : Material(Vec3(0.99), 0, NULL) { }
 
-    Vec3 f(const Vec3 &wo, const Vec3 &wi, const Vec3 &n);
+    Vec3 shade(const Hit &h, const Tracer *tracer) const;
 
-    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf);
+    Vec3 f(const Hit &h, const Vec3 &wi) const;
+
+    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf) const;
 
 };
 

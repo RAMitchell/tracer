@@ -3,12 +3,12 @@ project(Tracer)
 
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp -g")
 
 add_definitions(-D_USE_MATH_DEFINES -DGLEW_STATIC)
 include_directories(${CMAKE_SOURCE_DIR} $ENV{FREEGLUT}/include)
 
-set(SOURCE_FILES Main.cpp Scene.cpp Tracer.cpp glew.c Material.h Hit.h Filter.h Filter.cpp PostProcess.cpp PostProcess.h Material.cpp BVH.cpp BVH.h EnvMap.h HDRloader/hdrloader.cpp HDRloader/hdrloader.h)
+set(SOURCE_FILES Main.cpp Scene.cpp Tracer.cpp glew.c Material.h Hit.h Filter.h Filter.cpp PostProcess.cpp PostProcess.h Material.cpp BVH.cpp BVH.h EnvMap.h HDRloader/hdrloader.cpp HDRloader/hdrloader.h Texture.cpp Texture.h Object.cpp)
 
 add_executable(Tracer ${SOURCE_FILES})
 

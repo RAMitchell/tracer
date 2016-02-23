@@ -37,49 +37,49 @@ class Tracer {
 
     Camera camera;
     Scene scene;
-    std::unique_ptr<Filter> filter;
+
+    Timer frameTimer;
 
 
 public:
     Tracer() : width(0), height(0), samples(0), bounces(0) { }
 
-    Tracer(int w, int h, int s_, int b, int ts) : width(w), height(h), samples(s_), bounces(b), frame(0), tileSize(ts) {
+    Tracer(int w, int h, int s_, int b, int ts) : width(w), height(h), samples(s_), bounces(b), frame(0), tileSize(ts),
+                                                  frameTimer("Frame") {
 
         displayBuffer.resize(width * height);
         backBuffer.resize(width * height);
         bloomBuffer.resize(width * height);
 
         s = int(sqrt(samples));
-
-        filter = std::unique_ptr<Filter>(new BoxFilter());
-
-
     }
 
     Vec3 Trace(Ray ray) const;
 
-    void Add(Vec3 obj, float r, Material *m) {
-        scene.Add(obj, r, m);
+    void Addsphere(Sphere s) {
+        scene.addSphere(s);
     }
 
-    void SetCamera(Vec3 p, Vec3 l, Vec3 u, float fov) {
+    void SetCamera(Vec3 p, Vec3 l, Vec3 u, float fov, float aperture = 0, float focalLength = 1) {
         camera = Camera(p, l, u);
         camera.SetAspect(width, height);
         camera.SetFOV(fov);
+        camera.setAperture(aperture, focalLength);
     }
 
     void setEnvMap(std::string texture_filename, envProjection proj) {
         scene.setEnvMap(texture_filename, proj);
     }
+    void setEnvMap(Vec3 colour) {
+        scene.setEnvMap(colour);
+    }
 
-    Camera &getCamera() {
+    const Camera &getCamera() const {
         return camera;
     }
 
     void Init() {
-
-        scene.FindLights();
-        scene.buildBvh();
+        scene.init();
     }
 
     void Render();

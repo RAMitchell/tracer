@@ -9,19 +9,10 @@
 
 class Tracer;
 
-class Filter {
-public:
-    virtual Vec3 samplePixel(int x, int y, int width, int height, int s, Tracer *tracer) = 0;
+namespace Filter {
 
-protected:
-    //Generates s * s 2-D samples between the range l to u
-    void stratifiedSample(int s, float *samples, float l, float u);
-};
+    Vec3 box(int x, int y, int width, int height, int s, const Tracer *tracer);
 
-class BoxFilter : public Filter {
-
-public:
-    Vec3 samplePixel(int x, int y, int width, int height, int s, Tracer *tracer);
-};
-
+    Vec3 tent(int x, int y, int width, int height, int s, const Tracer *tracer);
+}
 #endif //TRACER_FILTER_H
