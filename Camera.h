@@ -42,9 +42,6 @@ public:
         up = Normalize(ud);
     }
 
-    void SetAspect(float w, float h) {
-        aspect = w / h;
-    }
 
     void SetFOV(float f) {
         fov = atan(f);
@@ -55,7 +52,8 @@ public:
         focalLength = fLength;
     }
 
-    Ray GetRay(float x, float y,float lens_x,float lens_y) const {
+    Ray getRay(float x, float y, int x_max, int y_max, float lens_x, float lens_y) const {
+        float aspect = x_max/y_max;
         Vec3 newPos = pos + side * (lens_x *aperture)  + up * (lens_y * aperture);
         Vec3 d = (dir + side * x * fov * aspect + up * y * fov).Normalize();
         Vec3 newT = pos + d * focalLength;

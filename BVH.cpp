@@ -28,70 +28,76 @@ bool BBox::hit(const Ray &r) const {
     return tmax > std::max(tmin, 0.0f);
 }
 
-BVH::Node::Node(std::vector<const Object *> objects, int axis) {
+BVH::Node::Node(const std::vector<const Object *> &objects, int axis) {
 
     box = getBBox(objects);
-    if (objects.size() <= 2) {
-        objs = objects;
+    if (objects.size() == 1) {
+        obj = objects.front();
         return;
-
     }
 
     //Separate objects according to midpoint of current axis
     std::vector<const Object *> left_objects;
     std::vector<const Object *> right_objects;
 
-    //Find midpoint depending on axis and create left and right nodes depending on sub lists of objects
-    if (axis == 0) {
-        float midpoint = box.x0 + ((box.x1 - box.x0) / 2);
-        std::copy_if(objects.begin(), objects.end(), std::back_inserter(left_objects),
-                     [&](const Object *o) {
-                         return o->position().x < midpoint;
-                     });
-        std::copy_if(objects.begin(), objects.end(), std::back_inserter(right_objects), [&](const Object *o) {
-            return o->position().x >= midpoint;
-        });
+    if (objects.size() == 2) {
+        left_objects.push_back(objects.front());
+        right_objects.push_back(objects.back());
+    }
+    else {
+        //Find midpoint depending on axis and create left and right nodes depending on sub lists of objects
+        if (axis == 0) {
+            float midpoint = box.x0 + ((box.x1 - box.x0) / 2);
+            std::copy_if(objects.begin(), objects.end(), std::back_inserter(left_objects),
+                         [&](const Object *o) {
+                             return o->centre().x < midpoint;
+                         });
+            std::copy_if(objects.begin(), objects.end(), std::back_inserter(right_objects), [&](const Object *o) {
+                return o->centre().x >= midpoint;
+            });
 
-        if (left_objects.size() > 0) {
-            left = std::unique_ptr<Node>(new Node(left_objects, (axis + 1) % 3));
         }
-        if (right_objects.size() > 0) {
-            right = std::unique_ptr<Node>(new Node(right_objects, (axis + 1) % 3));
+        else if (axis == 1) {
+            float midpoint = box.y0 + ((box.y1 - box.y0) / 2);
+            std::copy_if(objects.begin(), objects.end(), std::back_inserter(left_objects), [=](const Object *o) {
+                return o->centre().y < midpoint;
+            });
+            std::copy_if(objects.begin(), objects.end(), std::back_inserter(right_objects), [=](const Object *o) {
+                return o->centre().y >= midpoint;
+            });
+
+        }
+        else if (axis == 2) {
+            float midpoint = box.z0 + ((box.z1 - box.z0) / 2);
+            std::copy_if(objects.begin(), objects.end(), std::back_inserter(left_objects), [=](const Object *o) {
+                return o->centre().z < midpoint;
+            });
+            std::copy_if(objects.begin(), objects.end(), std::back_inserter(right_objects), [=](const Object *o) {
+                return o->centre().z >= midpoint;
+            });
+
         }
     }
-    else if (axis == 1) {
-        float midpoint = box.y0 + ((box.y1 - box.y0) / 2);
-        std::copy_if(objects.begin(), objects.end(), std::back_inserter(left_objects), [=](const Object *o) {
-            return o->position().y < midpoint;
-        });
-        std::copy_if(objects.begin(), objects.end(), std::back_inserter(right_objects), [=](const Object *o) {
-            return o->position().y >= midpoint;
-        });
-
-        if (left_objects.size() > 0) {
-            left = std::unique_ptr<Node>(new Node(left_objects, (axis + 1) % 3));
-        }
-        if (right_objects.size() > 0) {
-            right = std::unique_ptr<Node>(new Node(right_objects, (axis + 1) % 3));
-        }
+    //Handle the case where all objects are on the right or left
+    if (right_objects.size() > 2 && left_objects.size() == 0) {
+        int half = ceil(right_objects.size() / 2.0);
+        //Copy half the items into left objects
+        std::copy(right_objects.begin() + half, right_objects.end(), std::back_inserter(left_objects));
+        right_objects.erase(right_objects.begin() + half, right_objects.end());
     }
-    else if (axis == 2) {
-        float midpoint = box.z0 + ((box.z1 - box.z0) / 2);
-        std::copy_if(objects.begin(), objects.end(), std::back_inserter(left_objects), [=](const Object *o) {
-            return o->position().z < midpoint;
-        });
-        std::copy_if(objects.begin(), objects.end(), std::back_inserter(right_objects), [=](const Object *o) {
-            return o->position().z >= midpoint;
-        });
-
-        if (left_objects.size() > 0) {
-            left = std::unique_ptr<Node>(new Node(left_objects, (axis + 1) % 3));
-        }
-        if (right_objects.size() > 0) {
-            right = std::unique_ptr<Node>(new Node(right_objects, (axis + 1) % 3));
-        }
+    else if (left_objects.size() > 2 && right_objects.size() == 0) {
+        int half = ceil(left_objects.size() / 2.0);
+        //Copy half the items into left objects
+        std::copy(left_objects.begin() + half, left_objects.end(), std::back_inserter(right_objects));
+        left_objects.erase(left_objects.begin() + half, left_objects.end());
     }
 
+    if (left_objects.size() > 0) {
+        left = std::unique_ptr<Node>(new Node(left_objects, (axis + 1) % 3));
+    }
+    if (right_objects.size() > 0) {
+        right = std::unique_ptr<Node>(new Node(right_objects, (axis + 1) % 3));
+    }
 
 }
 
@@ -113,12 +119,10 @@ Hit BVH::Node::intersect(const Ray &r) const {
             }
         }
 
-        if (objs.size() > 0) {
-            for (auto &obj:objs) {
-                Hit h3 = obj->intersect(r);
-                if (h3.distance < h.distance) {
-                    h = h3;
-                }
+        if (obj != NULL) {
+            Hit h3 = obj->intersect(r);
+            if (h3.distance < h.distance) {
+                h = h3;
             }
         }
 
@@ -127,11 +131,42 @@ Hit BVH::Node::intersect(const Ray &r) const {
     return h;
 }
 
-BBox BVH::Node::getBBox(std::vector<const Object *> &objects) {
+Hit BVH::ArrayNode::intersect(const Ray &r, const std::vector<BVH::ArrayNode> &nodes) const {
+
+    Hit h;
+    if (box.hit(r)) {
+        if (left >= 0) {
+            Hit h1 = nodes[left].intersect(r, nodes);
+            if (h1.distance < h.distance) {
+                h = h1;
+            }
+        }
+
+        if (right >= 0) {
+            Hit h2 = nodes[right].intersect(r, nodes);
+            if (h2.distance < h.distance) {
+                h = h2;
+            }
+        }
+
+        if (obj != NULL) {
+            Hit h3 = obj->intersect(r);
+            if (h3.distance < h.distance) {
+                h = h3;
+            }
+        }
+
+    }
+
+    return h;
+}
+
+BBox BVH::Node::getBBox(const std::vector<const Object *> &objects) {
+
     const float min = -1e5, max = 1e5;
     BBox b(max, min, max, min, max, min);
 
-    for (const Object* o: objects) {
+    for (const Object *o: objects) {
 
         BBox oBox = o->getBB();
 
@@ -148,8 +183,9 @@ BBox BVH::Node::getBBox(std::vector<const Object *> &objects) {
 
 Hit BVH::intersect(const Ray &r) const {
 
-    if (root != NULL) {
-        return root->intersect(r);
+
+    if (nodes.size() > 0) {
+        return nodes.front().intersect(r, nodes);
     }
     else {
         return Hit();

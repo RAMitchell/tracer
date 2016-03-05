@@ -17,7 +17,7 @@ class BBox {
 public:
     float x0, x1, y0, y1, z0, z1;
 
-    BBox(){}
+    BBox() { }
 
     BBox(float x0, float x1, float y0, float y1, float z0, float z1) : x0(x0), x1(x1), y0(y0), y1(y1), z0(z0),
                                                                        z1(z1) { }
@@ -31,14 +31,27 @@ public:
 
 class BVH {
 
+    class ArrayNode {
+
+    public:
+        int left = -1;
+        int right = -1;
+        BBox box;
+        const Object *obj = NULL;
+
+        ArrayNode() { }
+
+        Hit intersect(const Ray&r,const std::vector< BVH::ArrayNode>& nodes)const;
+    };
+
     class Node {
     public:
         std::unique_ptr<Node> left = NULL;
         std::unique_ptr<Node> right = NULL;
         BBox box;
-        std::vector<const Object *> objs;
+        const Object *obj = NULL;
 
-        Node(std::vector<const Object *> objects, int axis);
+        Node(const std::vector<const Object *> &objects, int axis);
 
         Hit intersect(const Ray &r) const;
 
@@ -55,15 +68,46 @@ class BVH {
 
     private:
         //Find the smallest bounding box that encompasses objects
-        BBox getBBox(std::vector<const Object *> &objects);
+        BBox getBBox(const std::vector<const Object *> &objects);
     };
 
     std::unique_ptr<Node> root;
+    std::vector<ArrayNode> nodes;
+
+    void flatten(std::unique_ptr<Node> &n) {
+        int currentIndex = nodes.size();
+        nodes.push_back(ArrayNode());
+        nodes[currentIndex].box = n->box;
+        nodes[currentIndex].obj= n->obj;
+
+        if (n->left) {
+            nodes[currentIndex].left = nodes.size();
+            flatten(n->left);
+        }
+
+        if (n->right) {
+            nodes[currentIndex].right = nodes.size();
+            flatten(n->right);
+        }
+
+    }
 
 public:
 
-    void build(std::vector<const Object*> objs) {
-        root = std::unique_ptr<Node>(new Node(objs, 0));
+    void build(std::vector<const Object *> objs) {
+        try {
+            //Build tree
+            root = std::unique_ptr<Node>(new Node(objs, 0));
+
+            //Flatten tree into array
+            flatten(root);
+
+            //Clean up tree
+            root.reset();
+        }
+        catch(int e){
+            std::cerr << "Error building bvh.\n";
+        }
     }
 
     void print() {
@@ -72,7 +116,7 @@ public:
         }
     }
 
-    Hit intersect(const Ray &r) const ;
+    Hit intersect(const Ray &r) const;
 };
 
 

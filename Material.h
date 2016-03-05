@@ -30,6 +30,7 @@ protected:
     Material(const Vec3 &colour, const Vec3 &emmissive, Texture *alb) : colour(colour), emmissive(emmissive),
                                                                         alb(alb) { }
 
+
 //Generates random cosine weighted unit vector around normal
     Vec3 cosine_sample(const Vec3 &n, float exp = 1) const;
 
@@ -38,6 +39,9 @@ protected:
     float fresnel(const Hit &h, const float &f0) const;
 
 public:
+
+    virtual Material *clone() = 0;
+
     virtual Vec3 shade(const Hit &h, const Tracer *tracer) const = 0;
 
     Vec3 albedo(float u, float v) const {
@@ -70,6 +74,10 @@ public:
     Phong(float exp) : exp(exp), Material(Vec3(0.99), 0, NULL) {
     }
 
+    Material *clone() {
+        return new Phong(*this);
+    }
+
     Vec3 shade(const Hit &h, const Tracer *tracer) const;
 
     Vec3 f(const Hit &h, const Vec3 &wi) const;
@@ -89,6 +97,10 @@ public:
     Lambert(Vec3 c, Vec3 e) : Material(c, e, NULL) {
     }
 
+    Material *clone() {
+        return new Lambert(*this);
+    }
+
     Vec3 shade(const Hit &h, const Tracer *tracer) const;
 
     Vec3 f(const Hit &h, const Vec3 &wi) const;
@@ -106,6 +118,10 @@ public:
 
     }
 
+    Material *clone() {
+        return new FresnelBlend(*this);
+    }
+
     Vec3 shade(const Hit &h, const Tracer *tracer) const;
 
     Vec3 f(const Hit &h, const Vec3 &wi) const;
@@ -120,6 +136,10 @@ public:
     Refract(float ior) : ior(ior), Material(Vec3(0.99), 0, NULL) {
     }
 
+    Material *clone() {
+        return new Refract(*this);
+    }
+
     Vec3 shade(const Hit &h, const Tracer *tracer) const;
 
     Vec3 f(const Hit &h, const Vec3 &wi) const;
@@ -130,6 +150,27 @@ public:
 class Mirror : public Material {
 public:
     Mirror() : Material(Vec3(0.99), 0, NULL) { }
+
+    Material *clone() {
+        return new Mirror(*this);
+    }
+
+    Vec3 shade(const Hit &h, const Tracer *tracer) const;
+
+    Vec3 f(const Hit &h, const Vec3 &wi) const;
+
+    Vec3 sample_f(const Hit &h, Vec3 &wi, float &pdf) const;
+
+};
+
+class CookTorrence : public Material {
+    float roughness;
+public:
+    CookTorrence(Vec3 albedo, float roughness) : Material(albedo, 0, NULL), roughness(roughness) { }
+
+    Material *clone() {
+        return new CookTorrence(*this);
+    }
 
     Vec3 shade(const Hit &h, const Tracer *tracer) const;
 

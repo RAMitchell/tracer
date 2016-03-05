@@ -16,11 +16,23 @@ namespace Filter {
         }
     }
 
+    void stratifiedDiskSample(int s, float *samples, float radius) {
+        stratifiedSample(s, samples, 0, 1);
+
+        for (int i = 0; i < s * s; i++) {
+            float r = sqrt(samples[2 * i]) * radius;
+            float theta = samples[2 * i + 1] * 2 * M_PI;
+
+            samples[2 * i] = r * cosf(theta);
+            samples[2 * i + 1] = r * sinf(theta);
+        }
+    }
+
     Vec3 evaluateSamples(int x, int y, int width, int height, int s, const Tracer *tracer, float *samples) {
 
         //Generate lens samples for depth of field
         float lensSamples[s * s * 2];
-        stratifiedSample(s, lensSamples, -1.0, 1.0);
+        stratifiedDiskSample(s, lensSamples, 1.0);
 
         //Must shuffle samples so they don't correlate with camera samples
         //Cast to doubles so we shuffle them in pairs
@@ -34,8 +46,8 @@ namespace Filter {
             //Find pixel centre in -1 to 1 coordinates
             float x_f = (((float) x + samples[i * 2] + pixelWidth / 2.0f) / float(width)) * 2 - 1;
             float y_f = (((float) y + samples[i * 2 + 1] + pixelHeight / 2.0f) / float(height)) * 2 - 1;
-            Ray r = tracer->getCamera().GetRay(x_f, y_f, lensSamples[i * 2], lensSamples[i * 2 + 1]);
-            pixel += tracer->Trace(r);
+            Ray r = tracer->getCameraRay(x_f, y_f, lensSamples[i * 2], lensSamples[i * 2 + 1]);
+            pixel += tracer->trace(r);
         }
         return pixel / (s * s);
     }

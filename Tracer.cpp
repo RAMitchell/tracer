@@ -31,7 +31,7 @@ void Tracer::postProcess() {
     PostProcess::ReinhardTM(bloomBuffer, displayBuffer);
 }
 
-void Tracer::Render() {
+void Tracer::render() {
 
     //Frame is finished, display frame and prepare new frame
     if (tiles.size() == 0) {
@@ -64,10 +64,10 @@ void Tracer::Render() {
 }
 
 
-Vec3 Tracer::Trace(Ray ray) const {
+Vec3 Tracer::trace(Ray ray) const {
 
 
-    Hit hit = scene.bvhIntersect(ray);
+    Hit hit = scene->bvhIntersect(ray);
     if (hit.IsValid()) {
 
         //Russian roulette
@@ -92,6 +92,6 @@ Vec3 Tracer::Trace(Ray ray) const {
 
     }
     else {
-        return scene.env(ray.d);
+        return scene->env(ray.d);
     }
 }

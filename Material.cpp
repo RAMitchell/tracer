@@ -65,7 +65,7 @@ Vec3 Lambert::shade(const Hit &h, const Tracer *tracer) const {
     Vec3 fr = sample_f(h, wi, pdf);
     float ndotwi = std::max(0.0f, h.normal.Dot(wi));
 
-    L += fr * tracer->Trace({h.position + wi * EPS, wi, DIFFUSE, h.depth + 1}) * ndotwi / pdf;
+    L += fr * tracer->trace({h.position + wi * EPS, wi, DIFFUSE, h.depth + 1}) * ndotwi / pdf;
 
     return L;
 }
@@ -102,7 +102,7 @@ Vec3 Phong::shade(const Hit &h, const Tracer *tracer) const {
     Vec3 fr = sample_f(h, wi, pdf);
     float ndotwi = std::max(0.0f, h.normal.Dot(wi));
 
-    L += fr * tracer->Trace({h.position + wi * EPS, wi, GLOSSY, h.depth + 1}) * ndotwi / pdf;
+    L += fr * tracer->trace({h.position + wi * EPS, wi, GLOSSY, h.depth + 1}) * ndotwi / pdf;
 
     return L;
 }
@@ -163,9 +163,35 @@ bool refract(const Vec3 d, const Vec3 n, float nnt, Vec3 &t) {
 
 Vec3 Refract::shade(const Hit &h, const Tracer *tracer) const {
 
-    Vec3 t;
 
-    Vec3 r = (-h.wo).Reflect(h.normal);
+    Vec3 d = -h.wo;
+    Vec3 r = d.Reflect(h.normal);
+
+    Vec3 nl = h.normal.Dot(h.wo) > 0 ? h.normal : -h.normal;
+
+    bool into = h.wo.Dot(h.normal) > 0;
+    float nnt = into ? 1 / ior : ior;
+    float ddn = d.Dot(nl);
+    float cos2t = 1 - nnt * nnt * (1 - ddn * ddn);
+
+    //Total internal reflection
+    if (cos2t < 0) {
+        return tracer->trace({h.position + nl * EPS, r, REFLECT, h.depth + 1});
+    }
+
+    Vec3 t = (d * nnt - h.normal * ((into ? 1 : -1) * (ddn * nnt + sqrt(cos2t)))).Normalize();
+
+    float cosine = (into ? -ddn : t.Dot(h.normal));
+    float f0 = ((ior - 1) * (ior - 1)) / ((ior + 1) * (ior + 1));
+    float F = f0 + (1 - f0) * pow(1 - cosine, 5);
+
+    if (Random(0, 1) < F) {
+        return tracer->trace({h.position + nl * EPS, r, REFLECT, h.depth + 1});
+    }
+    else {
+        return tracer->trace({h.position - nl * EPS, t, REFRACT, h.depth + 1});
+    }
+    /*
     float cosine = 0.0f;
 
     if (h.wo.Dot(h.normal) > 0) {
@@ -178,7 +204,7 @@ Vec3 Refract::shade(const Hit &h, const Tracer *tracer) const {
         }
         else {
             //Total internal reflection
-            return tracer->Trace({h.position + r * EPS, r, REFLECT, h.depth + 1});
+            return tracer->trace({h.position  -  h.normal * EPS, r, REFLECT, h.depth + 1});
         }
     }
 
@@ -186,12 +212,13 @@ Vec3 Refract::shade(const Hit &h, const Tracer *tracer) const {
     float F = f0 + (1 - f0) * pow(1 - cosine, 5);
 
     if (Random(0, 1) < F) {
-        return tracer->Trace({h.position + r * EPS, r, REFLECT, h.depth + 1});
+        return tracer->trace({h.position + r * EPS, r, REFLECT, h.depth + 1});
     }
     else {
-        return tracer->Trace({h.position + t * EPS, t, REFRACT, h.depth + 1});
+        return tracer->trace({h.position + t * EPS, t, REFRACT, h.depth + 1});
     }
 
+*/
 }
 
 Vec3 Refract::f(const Hit &h, const Vec3 &wi) const {
@@ -205,7 +232,7 @@ Vec3 Refract::sample_f(const Hit &h, Vec3 &wi, float &pdf) const {
 Vec3 Mirror::shade(const Hit &h, const Tracer *tracer) const {
 
     Vec3 r = (-h.wo).Reflect(h.normal);
-    return tracer->Trace({h.position + r * EPS, r, REFLECT, h.depth + 1});
+    return tracer->trace({h.position + r * EPS, r, REFLECT, h.depth + 1});
 }
 
 Vec3 Mirror::f(const Hit &h, const Vec3 &wi) const {

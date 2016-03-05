@@ -35,8 +35,7 @@ class Tracer {
     std::vector<Vec3> backBuffer;
     std::vector<Vec3> bloomBuffer;
 
-    Camera camera;
-    Scene scene;
+    Scene *scene;
 
     Timer frameTimer;
 
@@ -54,49 +53,34 @@ public:
         s = int(sqrt(samples));
     }
 
-    Vec3 Trace(Ray ray) const;
+    Vec3 trace(Ray ray) const;
 
-    void Addsphere(Sphere s) {
-        scene.addSphere(s);
+    void loadScene(Scene *sc) {
+        scene = sc;
+        scene->init();
     }
 
-    void SetCamera(Vec3 p, Vec3 l, Vec3 u, float fov, float aperture = 0, float focalLength = 1) {
-        camera = Camera(p, l, u);
-        camera.SetAspect(width, height);
-        camera.SetFOV(fov);
-        camera.setAperture(aperture, focalLength);
+
+    Ray getCameraRay(float x, float y, float lens_x = 0.0f, float lens_y = 0.0f) const {
+        return scene->getCamera()->getRay(x, y, width, height, lens_x, lens_y);
     }
 
-    void setEnvMap(std::string texture_filename, envProjection proj) {
-        scene.setEnvMap(texture_filename, proj);
-    }
-    void setEnvMap(Vec3 colour) {
-        scene.setEnvMap(colour);
-    }
+    void render();
 
-    const Camera &getCamera() const {
-        return camera;
-    }
-
-    void Init() {
-        scene.init();
-    }
-
-    void Render();
-
-    const Vec3 *GetImage() const { return displayBuffer.data(); }
+    const Vec3 *getImage() const { return displayBuffer.data(); }
 
     int getSamplesPP() {
         return s * s * (frame - 1);
     }
 
+
     const Scene *getScene() const {
-        return &scene;
+        return scene;
     }
 
-    int Width() const { return width; }
+    int getWidth() const { return width; }
 
-    int Height() const { return height; }
+    int getHeight() const { return height; }
 
 private:
     void buildTiles();

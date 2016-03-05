@@ -1,120 +1,86 @@
 #include "Includes.h"
 #include "Tracer.h"
 #include <sstream>
-#include "Material.h"
 
 
 Tracer tracer;
+Scene scene;
 
-//Materials
-std::unique_ptr<Lambert> white(new Lambert(Vec3(0.75), 0.0));
-std::unique_ptr<FresnelBlend> gloss(new FresnelBlend(Vec3(0.75, 0.25, 0.25), 0.0, 1000.0, 0.05));
-std::unique_ptr<Lambert> e(new Lambert(Vec3(1), 120.0));
-std::unique_ptr<Lambert> e_debug(new Lambert(Vec3(0.5), 0.25));
-std::unique_ptr<Lambert> red(new Lambert(Vec3(0.75, 0.25, 0.25), 0.0));
-std::unique_ptr<Lambert> blue(new Lambert(Vec3(0.25, 0.25, 0.75), 0.0));
-std::unique_ptr<Lambert> black(new Lambert(Vec3(0.0), 0.0));
 
-std::unique_ptr<Refract> refr(new Refract(1.5));
-std::unique_ptr<Mirror> mirror(new Mirror());
-std::unique_ptr<Grid> grid(new Grid(10, 10, 0.01, 0.01, Vec3(0.2), Vec3(0.75)));
-std::unique_ptr<Lambert> gWhite(new Lambert(grid.get()));
-
-void debug1() {
-
-    tracer.SetCamera(Vec3(0.0, 0.0, -18.0), Vec3(0, 0, 0), Vec3(0, 1, 0), M_PI / 13);
-    tracer.Addsphere(Sphere(Vec3(0, -1.0, 0), 1.0, white.get()));//Ball 1
-    tracer.Addsphere(Sphere(Vec3(0, 1.0, 0), 1.0, e.get()));//Light
-
-    tracer.Init();
-}
-
-void debug2() {
-
-    tracer.SetCamera(Vec3(0.0, 0.0, 0.0), Vec3(0, 0, 2), Vec3(0, 1, 0), M_PI / 13);
-    tracer.Addsphere(Sphere(Vec3(0, -1e4, 0), 1e4 - 1, e_debug.get()));
-    tracer.Addsphere(Sphere(Vec3(0, 1e4, 0), 1e4 - 1, e_debug.get()));
-    tracer.Addsphere(Sphere(Vec3(-1e4, 0, 0), 1e4 - 1, e_debug.get()));
-    tracer.Addsphere(Sphere(Vec3(1e4, 0, 0), 1e4 - 1, e_debug.get()));
-    tracer.Addsphere(Sphere(Vec3(0, 0, -1e4), 1e4 - 1, e_debug.get()));
-    tracer.Addsphere(Sphere(Vec3(0, 0, 1e4), 1e4 - 1, e_debug.get()));
-
-    tracer.Init();
+void addMaterials() {
+    scene.addMaterial("white", new Lambert(Vec3(0.75)));
+    scene.addMaterial("blue gloss", new FresnelBlend(Vec3(0.25, 0.25, 0.75), 0.0, 10000.0, 0.05));
+    scene.addMaterial("e", new Lambert(Vec3(1), 120));
+    scene.addMaterial("red", new Lambert(Vec3(0.75, 0.25, 0.25)));
+    scene.addMaterial("blue", new Lambert(Vec3(0.25, 0.25, 0.75)));
+    scene.addMaterial("black", new Lambert(Vec3(0)));
+    scene.addMaterial("refract", new Refract(1.5));
+    scene.addMaterial("mirror", new Mirror());
 }
 
 void hdrScene() {
 
-    tracer.SetCamera(Vec3(-1, 2.5, 18.0), Vec3(0, 1, 0), Vec3(0, 1, 0), M_PI / 13);
-    //tracer.Addsphere(Sphere(Vec3(0, -1e4, 0), 1e4, white.get()); //Bottom
-    tracer.Addsphere(Sphere(Vec3(2.0, 1.0, 0), 1.0, refr.get()));//Ball 1
-    tracer.Addsphere(Sphere(Vec3(-2, 1.0, -4.5), 1.0, refr.get()));//Ball 2
+    scene.setCamera(Vec3(0, 2.5, -10.0), Vec3(0.75, 1, 0), Vec3(0, 1, 0), M_PI / 13, 0.055, 7.15);
 
-    tracer.setEnvMap("Texture/road.hdr", ENV_LATLNG);
+    OBJMesh mini("Models/minicooper.obj");
+    mini.scale(0.025);
+    mini.rotate(Vec3(1, 0, 0), -M_PI / 2);
+    mini.rotate(Vec3(0, 0, 1), M_PI / 1.3);
+    mini.translate(Vec3(0, 1, -2));
+    mini.generateSmoothNormals();
+    scene.addMesh(&mini,"blue gloss");
+    scene.setEnvMap("Texture/road.hdr", ENV_LATLNG);
 
-    tracer.Init();
+    tracer.loadScene(&scene);
 }
 
+/*
 void dof() {
 
-    tracer.SetCamera(Vec3(0.0, 2.5, 0), Vec3(0, 2,  18), Vec3(0, 1, 0), M_PI / 13,0.1,20);
-    tracer.Addsphere(Sphere(Vec3(0, -1e4, 0), 1e4, white.get())); //Bottom
+    tracer.setCamera(Vec3(0.0, 2.5, 0), Vec3(0, 2, 18), Vec3(0, 1, 0), M_PI / 13, 0.1, 20);
+    tracer.addSphere(Sphere(Vec3(0, -1e4, 0), 1e4, white.get())); //Bottom
     for (int i = 0; i < 100; i++) {
-        tracer.Addsphere(Sphere(Vec3( - 3, 1.0, i * 5), 1.0, gWhite.get()));
+        tracer.addSphere(Sphere(Vec3(-3, 1.0, i * 5), 1.0, gWhite.get()));
     }
-    tracer.Addsphere(Sphere(Vec3(-1, 4.5, 20), 0.5, e.get()));//Light
+    tracer.addSphere(Sphere(Vec3(-1, 4.5, 20), 0.5, e.get()));//Light
     tracer.setEnvMap(Vec3(3.0));
     tracer.Init();
 }
+*/
+
 
 void initScene() {
+    scene.setCamera(Vec3(0.0, 2.5, -18.0), Vec3(0, 2, 0), Vec3(0, 1, 0), M_PI / 13);
 
-    tracer.SetCamera(Vec3(0.0, 2.5, -18.0), Vec3(0, 2, 0), Vec3(0, 1, 0), M_PI / 13);
-    tracer.Addsphere(Sphere(Vec3(1e4 + 3, 0, 0), 1e4, red.get())); //Left
-    tracer.Addsphere(Sphere(Vec3(-1e4 - 3, 0, 0), 1e4, blue.get())); //Right
-    tracer.Addsphere(Sphere(Vec3(0, 0, 1e4 + 3), 1e4, white.get())); //Back
-    tracer.Addsphere(Sphere(Vec3(0, 0, -1e4 - 20), 1e4, black.get())); //Front
-    //tracer.Addsphere(Sphere(Vec3(0, 1e4 + 5, 0), 1e4, white.get()); //Top
+    scene.addSphere(Sphere(Vec3(1e4 + 3, 0, 0), 1e4), "red"); //Left
+    scene.addSphere(Sphere(Vec3(-1e4 - 3, 0, 0), 1e4), "blue"); //Right
+    scene.addSphere(Sphere(Vec3(0, 0, -1e4 - 20), 1e4), "black"); //Front
+    scene.addSphere(Sphere(Vec3(0, 0, 1e4 + 5), 1e4), "white");//Front
 
-    tracer.Addsphere(Sphere(Vec3(0, -1e4, 0), 1e4, white.get())); //Bottom
-    tracer.Addsphere(Sphere(Vec3(2.0, 1.0, 0), 1.0, gWhite.get()));//Ball 1
-    tracer.Addsphere(Sphere(Vec3(-2, 1.0, -4.5), 1.0, refr.get()));//Ball 2
-    tracer.Addsphere(Sphere(Vec3(0, 1.0, -4.5), 1.0, white.get()));
-    tracer.Addsphere(Sphere(Vec3(-1, 4.5, -2), 0.5, e.get()));//Light
+    scene.addSphere(Sphere(Vec3(0, -1e4, 0), 1e4), "white");//Bottom
+    scene.addSphere(Sphere(Vec3(-2, 1.0, -4.5), 1.0), "refract");//Ball 2
+    scene.addSphere(Sphere(Vec3(-1, 4.5, -2), 0.5), "e");//Light
 
-    tracer.Init();
+
+    OBJMesh mesh("Models/cow-nonormals.obj");
+    mesh.scale(0.5);
+    mesh.translate(Vec3(0, 1, -4));
+    //scene.addMesh(&mesh, "blue gloss");
+
+    BoxMesh box(1.5, 2.5, 0.2);
+    box.translate(Vec3(0, 0, -3));
+    box.rotate(Vec3(0,1,0),M_PI * 2-M_PI/4);
+    scene.addMesh(&box, "refract");
+
+
+    tracer.loadScene(&scene);
 }
 
-
-void bvhTest() {
-
-    tracer.SetCamera(Vec3(0.0, 2.5, -18.0), Vec3(0, 2, 0), Vec3(0, 1, 0), M_PI / 13);
-
-    tracer.Addsphere(Sphere(Vec3(-3, 4.5, -2), 0.5, e.get()));//Light
-
-    int spheres_x = 100;
-    int spheres_y = 10;
-    for (int y = 0; y < spheres_y; y++) {
-        for (int x = 0; x < spheres_x; x++) {
-
-            tracer.Addsphere(Sphere(Vec3(x * 5, y * 5, 0), 0.5, white.get()));
-        }
-    }
-    tracer.Init();
-}
-
-
-void benchmark(int iterations) {
-    size_t start = clock();
-    for (int i = 0; i < iterations; i++) {
-        tracer.Render();
-    }
-    printf("Benchmark time: %1.2f\n", ((double) clock() - start) / CLOCKS_PER_SEC);
-}
 
 void display() {
 
-    tracer.Render();
-    glDrawPixels(tracer.Width(), tracer.Height(), GL_RGB, GL_FLOAT, tracer.GetImage());
+    tracer.render();
+    glDrawPixels(tracer.getWidth(), tracer.getHeight(), GL_RGB, GL_FLOAT, tracer.getImage());
     std::ostringstream ss;
     ss << "Tracer. Samples per pixel: " << tracer.getSamplesPP();
     std::string title = ss.str();
@@ -126,10 +92,6 @@ void display() {
 int main(int argc, char **argv) {
     int w = 1000, h = 1000, samplesPP = 4, bounces = 3, tileSize = 32;
 
-    bool bench = false;
-    int bench_iterations = 100;
-    bool db1 = false;
-    bool db2 = false;
 
     for (int i = 0; i < argc; ++i) {
         if (strcmp(argv[i], "-s") == 0) {
@@ -143,22 +105,11 @@ int main(int argc, char **argv) {
 
     tracer = Tracer(w, h, samplesPP, bounces, tileSize);
 
-    if (db1) {
-        debug1();
-    }
-    else if (db2) {
-        debug2();
-    }
-    else if (bench) {
-        initScene();
-        benchmark(bench_iterations);
-        return 0;
-    }
-    else {
-        initScene();
-        //hdrScene();
-        //dof();
-    }
+    addMaterials();
+
+    //initScene();
+    hdrScene();
+    //dof();
 
     glutInit(&argc, argv);
     glutInitWindowSize(w, h);
@@ -171,3 +122,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
